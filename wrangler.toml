@@ -1,0 +1,28 @@
+name = "aliza-traders"
+main = "src/index.ts"
+compatibility_date = "2024-10-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Static assets
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+# D1 Database
+[[d1_databases]]
+binding = "DB"
+database_name = "aliza-db"
+database_id = "local-dev-placeholder"
+preview_database_id = "local-dev-placeholder"
+
+# R2 (enable later when card is added)
+# [[r2_buckets]]
+# binding = "IMAGES"
+# bucket_name = "aliza-images"
+
+[vars]
+SITE_NAME = "Aliza Traders"
+ADMIN_USERNAME = "admin"
+# Set ADMIN_PASSWORD and JWT_SECRET as secrets in production:
+# wrangler secret put ADMIN_PASSWORD
+# wrangler secret put JWT_SECRET
