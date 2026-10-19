@@ -13,7 +13,7 @@ binding = "ASSETS"
 binding = "DB"
 database_name = "aliza-db"
 database_id = "local-dev-placeholder"
-preview_database_id = "local-dev-placeholder"
+preview_database_id = "9083c24c-2962-493d-8a07-1b39582be208"
 
 # R2 (enable later when card is added)
 # [[r2_buckets]]
