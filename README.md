@@ -1,44 +1,29 @@
-# Aliza Traders
+# Aliza Traders — Luxury Festive E-commerce
 
-Luxury festive e-commerce — Party · Function · Mehndi · Bridal Luxe  
-Stack: **Cloudflare Workers + Hono + D1** (R2 for images later)
+Cloudflare Workers + Hono + D1. Design: deep maroon · gold · ivory.
 
-## Local development
+## Phase status
+- **Phase 1** — Storefront (Home, Shop, PDP, Cart, Contact) ✅
+- **Phase 2** — Admin panel (login, products CRUD, orders, messages, settings) + logo ✅
+- **Phase 3** — Checkout / orders to DB (pending)
+- **Phase 4** — R2 image uploads (pending — needs Cloudflare card)
 
+## Local setup
 ```bash
 npm install
+npx wrangler login
 npx wrangler d1 create aliza-db
-# put the database_id into wrangler.toml
+# paste database_id into wrangler.toml
 npm run db:local
 npm run dev
 ```
 
-Open http://localhost:8787
+- Store: http://localhost:8787  
+- Admin: http://localhost:8787/admin  
+- Default login: `admin` / `AlizaTraders@2026` (override with secrets in production)
 
-## Deploy (Cloudflare)
-
+## Production secrets
 ```bash
-npx wrangler login
-npx wrangler d1 create aliza-db
-# copy database_id into wrangler.toml under [[d1_databases]]
-npm run db:remote
-npm run deploy
+wrangler secret put ADMIN_PASSWORD
+wrangler secret put JWT_SECRET
 ```
-
-## R2 (images) — when card is ready
-
-1. Enable R2 in Cloudflare dashboard (may ask for card once)
-2. Create bucket `aliza-images`
-3. Uncomment R2 section in `wrangler.toml`
-4. Wire upload API in admin (Phase 4)
-
-## Phases
-
-- **Phase 1** ✅ Foundation, design system, homepage, shop, product, cart (localStorage), contact
-- **Phase 2** Admin panel + auth + product CRUD
-- **Phase 3** Orders, stats, settings from admin
-- **Phase 4** R2 uploads, polish, domain
-
-## Design
-
-Deep maroon · warm gold · ivory — luxury festive, not a copy of any other store.

@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { getSettings, getCategories, getFeaturedProducts, getProducts, getProductBySlug, formatPrice, discountPercent } from './lib/db';
 import type { Env, Product, SiteSettings, Category } from './types';
+import admin from './routes/admin';
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -36,7 +37,9 @@ function layout(opts: {
       <button class="icon-btn" id="menuBtn" aria-label="Menu">
         <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h14M4 12h14M4 17h14"/></svg>
       </button>
-      <a href="/" class="logo">Aliza <span>Traders</span></a>
+      <a href="/" class="logo-link" aria-label="Aliza Traders">
+        <img src="/img/logo.png" alt="Aliza Traders" class="logo-img" width="160" height="48" />
+      </a>
       <div class="header-actions">
         <a href="/shop" class="icon-btn" aria-label="Search">
           <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="9" r="6"/><path d="M14 14l4 4"/></svg>
@@ -333,5 +336,7 @@ app.post('/api/contact', async (c) => {
 
 /* Health */
 app.get('/api/health', (c) => c.json({ ok: true, service: 'aliza-traders' }));
+
+app.route('/', admin);
 
 export default app;
