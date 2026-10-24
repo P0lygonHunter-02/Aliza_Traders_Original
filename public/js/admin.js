@@ -208,7 +208,13 @@
               <div class="field"><label>Category</label><select name="category_id"><option value="">—</option>${cats}</select></div>
               <div class="field"><label>Stock</label><input name="stock" type="number" value="${p?.stock ?? 10}" /></div>
             </div>
-            <div class="field"><label>Image URL</label><input name="image_url" placeholder="https://… (ImgBB / R2 later)" value="${esc(p?.image_url || '')}" /></div>
+            <div class="field"><label>Product image</label>
+              <input type="file" id="imgFile" accept="image/jpeg,image/png,image/webp,image/gif" />
+              <p style="font-size:11px;color:var(--muted);margin:6px 0">Upload to R2 (max 5MB) or paste URL below</p>
+              <input name="image_url" id="imageUrlInput" placeholder="https://… or /media/…" value="${esc(p?.image_url || '')}" />
+              <div id="uploadStatus" style="font-size:12px;margin-top:6px"></div>
+              ${p?.image_url ? `<img src="${esc(p.image_url)}" alt="" style="margin-top:8px;max-height:80px;border-radius:6px" />` : ''}
+            </div>
             <div class="field"><label>Sizes (comma)</label><input name="sizes" value="${esc(p?.sizes || 'S,M,L,XL')}" /></div>
             <div class="field"><label>Description</label><textarea name="description" rows="2">${esc(p?.description || '')}</textarea></div>
             <div class="field"><label>Details (one per line)</label><textarea name="details" rows="3">${esc(p?.details || '')}</textarea></div>
@@ -226,6 +232,35 @@
         </div>
       </div>`;
     document.getElementById('cancelModal').onclick = () => (root.innerHTML = '');
+
+    const fileInput = document.getElementById('imgFile');
+    if (fileInput) {
+      fileInput.onchange = async () => {
+        const file = fileInput.files && fileInput.files[0];
+        if (!file) return;
+        const status = document.getElementById('uploadStatus');
+        status.style.color = 'var(--muted)';
+        status.textContent = 'Uploading…';
+        try {
+          const fd = new FormData();
+          fd.append('file', file);
+          const res = await fetch('/api/admin/upload', { method: 'POST', body: fd, credentials: 'same-origin' });
+          const data = await res.json();
+          if (!data.ok) {
+            status.style.color = 'var(--danger)';
+            status.textContent = data.error || 'Upload failed';
+            return;
+          }
+          document.getElementById('imageUrlInput').value = data.url;
+          status.style.color = 'var(--success)';
+          status.textContent = 'Uploaded ✓';
+        } catch {
+          status.style.color = 'var(--danger)';
+          status.textContent = 'Network error';
+        }
+      };
+    }
+
     document.getElementById('prodForm').onsubmit = async (e) => {
       e.preventDefault();
       const fd = new FormData(e.target);

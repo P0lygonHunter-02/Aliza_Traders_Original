@@ -236,6 +236,52 @@ admin.delete('/api/admin/messages/:id', async (c) => {
   return c.json({ ok: true });
 });
 
+/* ---------- Phase 4: Image upload to R2 ---------- */
+admin.post('/api/admin/upload', async (c) => {
+  if (!(await requireAuth(c))) return c.json({ ok: false }, 401);
+  if (!c.env.IMAGES) {
+    return c.json(
+      {
+        ok: false,
+        error: 'R2 not configured. Create bucket "aliza-images" and bind IMAGES in wrangler.toml',
+      },
+      503
+    );
+  }
+  try {
+    const form = await c.req.parseBody();
+    const file = form['file'];
+    if (!file || typeof file === 'string') {
+      return c.json({ ok: false, error: 'No file uploaded' }, 400);
+    }
+    const f = file as File;
+    const maxBytes = 5 * 1024 * 1024; // 5MB
+    if (f.size > maxBytes) return c.json({ ok: false, error: 'Max file size 5MB' }, 400);
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (f.type && !allowed.includes(f.type)) {
+      return c.json({ ok: false, error: 'Only JPG, PNG, WebP, GIF allowed' }, 400);
+    }
+    const ext =
+      f.type === 'image/png'
+        ? 'png'
+        : f.type === 'image/webp'
+          ? 'webp'
+          : f.type === 'image/gif'
+            ? 'gif'
+            : 'jpg';
+    const key = `products/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    await c.env.IMAGES.put(key, await f.arrayBuffer(), {
+      httpMetadata: { contentType: f.type || 'image/jpeg' },
+    });
+    const publicBase = (c.env.R2_PUBLIC_URL || '').replace(/\/$/, '');
+    const url = publicBase ? `${publicBase}/${key}` : `/media/${key}`;
+    return c.json({ ok: true, key, url });
+  } catch (e) {
+    console.error(e);
+    return c.json({ ok: false, error: 'Upload failed' }, 500);
+  }
+});
+
 /* ---------- Settings ---------- */
 admin.get('/api/admin/settings', async (c) => {
   if (!(await requireAuth(c))) return c.json({ ok: false }, 401);

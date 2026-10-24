@@ -15,14 +15,17 @@ database_name = "aliza-db"
 database_id = "local-dev-placeholder"
 preview_database_id = "9083c24c-2962-493d-8a07-1b39582be208"
 
-# R2 (enable later when card is added)
-# [[r2_buckets]]
-# binding = "IMAGES"
-# bucket_name = "aliza-images"
+# R2 images (Phase 4) — create bucket "aliza-images" in Cloudflare dashboard
+[[r2_buckets]]
+binding = "IMAGES"
+bucket_name = "aliza-images"
+preview_bucket_name = "aliza-images"
 
 [vars]
 SITE_NAME = "Aliza Traders"
 ADMIN_USERNAME = "admin"
-# Set ADMIN_PASSWORD and JWT_SECRET as secrets in production:
+# Optional: public R2 URL after enabling public access on bucket
+# R2_PUBLIC_URL = "https://pub-xxxx.r2.dev"
+# Secrets (production):
 # wrangler secret put ADMIN_PASSWORD
 # wrangler secret put JWT_SECRET

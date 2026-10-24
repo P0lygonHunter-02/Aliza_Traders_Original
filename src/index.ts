@@ -337,6 +337,135 @@ app.post('/api/contact', async (c) => {
 /* Health */
 app.get('/api/health', (c) => c.json({ ok: true, service: 'aliza-traders' }));
 
+/* ---------- Phase 3: Orders API ---------- */
+app.post('/api/orders', async (c) => {
+  try {
+    const body = await c.req.json<{
+      customer_name: string;
+      customer_phone: string;
+      customer_email?: string;
+      customer_address?: string;
+      city?: string;
+      notes?: string;
+      items: { id: number; name: string; price: number; qty: number; size?: string; img?: string }[];
+    }>();
+
+    if (!body.customer_name?.trim() || !body.customer_phone?.trim()) {
+      return c.json({ ok: false, error: 'Name and phone required' }, 400);
+    }
+    if (!Array.isArray(body.items) || body.items.length === 0) {
+      return c.json({ ok: false, error: 'Cart is empty' }, 400);
+    }
+
+    const items = body.items.map((i) => ({
+      id: Number(i.id),
+      name: String(i.name || ''),
+      price: Number(i.price) || 0,
+      qty: Math.max(1, Number(i.qty) || 1),
+      size: i.size || '',
+      img: i.img || '',
+    }));
+    const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
+    const shipping = 0;
+    const total = subtotal + shipping;
+    const orderNumber =
+      'AT' + Date.now().toString(36).toUpperCase() + Math.floor(Math.random() * 90 + 10);
+
+    await c.env.DB.prepare(
+      `INSERT INTO orders (
+        order_number, customer_name, customer_phone, customer_email,
+        customer_address, city, items, subtotal, shipping, total, status, notes
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)`
+    )
+      .bind(
+        orderNumber,
+        body.customer_name.trim(),
+        body.customer_phone.trim(),
+        body.customer_email?.trim() || null,
+        body.customer_address?.trim() || null,
+        body.city?.trim() || null,
+        JSON.stringify(items),
+        subtotal,
+        shipping,
+        total,
+        body.notes?.trim() || null
+      )
+      .run();
+
+    for (const it of items) {
+      if (!it.id) continue;
+      try {
+        await c.env.DB.prepare(
+          `UPDATE products SET
+            sold_count = sold_count + ?,
+            stock = CASE WHEN stock >= ? THEN stock - ? ELSE 0 END,
+            updated_at = datetime('now')
+           WHERE id = ?`
+        )
+          .bind(it.qty, it.qty, it.qty, it.id)
+          .run();
+      } catch {
+        /* best-effort */
+      }
+    }
+
+    const settings = await getSettings(c.env.DB);
+    const wa = (settings.whatsapp || '923000000000').replace(/[^0-9]/g, '');
+    const lines = items.map(
+      (i) =>
+        `• ${i.name} (${i.size || '—'}) x${i.qty} — Rs ${(i.price * i.qty).toLocaleString('en-PK')}`
+    );
+    const waText = [
+      `New order ${orderNumber}`,
+      `Name: ${body.customer_name.trim()}`,
+      `Phone: ${body.customer_phone.trim()}`,
+      body.city ? `City: ${body.city.trim()}` : '',
+      body.customer_address ? `Address: ${body.customer_address.trim()}` : '',
+      '',
+      ...lines,
+      '',
+      `Total: Rs ${total.toLocaleString('en-PK')}`,
+      'Payment: Cash on Delivery',
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    return c.json({
+      ok: true,
+      order_number: orderNumber,
+      total,
+      whatsapp_url: `https://wa.me/${wa}?text=${encodeURIComponent(waText)}`,
+    });
+  } catch (e) {
+    console.error(e);
+    return c.json({ ok: false, error: 'Failed to place order' }, 500);
+  }
+});
+
+app.get('/api/settings/public', async (c) => {
+  const s = await getSettings(c.env.DB);
+  return c.json({
+    ok: true,
+    whatsapp: s.whatsapp || '923000000000',
+    phone: s.phone || '',
+    shipping_note: s.shipping_note || '',
+  });
+});
+
+/* ---------- Phase 4: Serve R2 objects ---------- */
+app.get('/media/*', async (c) => {
+  if (!c.env.IMAGES) return c.text('R2 not configured', 503);
+  const key = decodeURIComponent(c.req.path.replace(/^\/media\/?/, ''));
+  if (!key || key.includes('..')) return c.text('Not found', 404);
+  const obj = await c.env.IMAGES.get(key);
+  if (!obj) return c.text('Not found', 404);
+  const headers = new Headers();
+  obj.writeHttpMetadata(headers);
+  headers.set('etag', obj.httpEtag);
+  headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+  return new Response(obj.body, { headers });
+});
+
 app.route('/', admin);
 
 export default app;

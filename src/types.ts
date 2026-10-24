@@ -1,11 +1,13 @@
 export type Env = {
   DB: D1Database;
   ASSETS: Fetcher;
+  IMAGES?: R2Bucket;
   SITE_NAME: string;
   ADMIN_USERNAME: string;
   ADMIN_PASSWORD?: string;
   JWT_SECRET?: string;
-  // IMAGES?: R2Bucket; // enable later
+  /** Optional public base URL for R2 (e.g. https://pub-xxx.r2.dev). If empty, images served via /media/ */
+  R2_PUBLIC_URL?: string;
 };
 
 export type Category = {
@@ -39,3 +41,12 @@ export type Product = {
 };
 
 export type SiteSettings = Record<string, string>;
+
+export type CartItem = {
+  id: number;
+  name: string;
+  price: number;
+  qty: number;
+  size?: string;
+  img?: string;
+};
